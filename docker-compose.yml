@@ -1,0 +1,62 @@
+# WARNING: Replace the example passwords with secure secrets.
+# WARNING: 'my_secret_phpipam_pass' and 'my_secret_mysql_root_pass'
+
+version: "3"
+services:
+  phpipam-web:
+    container_name: phpipam-web
+    image: phpipam/phpipam-www:latest
+    ports:
+      - 80:80
+    environment:
+      - TZ=America/Sao_Paulo
+      - IPAM_DATABASE_HOST=${IP}
+      - IPAM_DATABASE_PASS=${DBPASS}
+      - IPAM_DATABASE_WEBHOST=%
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    restart: unless-stopped
+    volumes:
+      - phpipam-logo:/phpipam/css/images/logo
+      - phpipam-ca:/usr/local/share/ca-certificates:ro
+    env_file:
+      - .env
+    depends_on:
+      - phpipam-mariadb
+  phpipam-cron:
+    container_name: phpipam-cron
+    image: phpipam/phpipam-cron:latest
+    environment:
+      - TZ=America/Sao_Paulo
+      - IPAM_DATABASE_HOST=${IP}
+      - IPAM_DATABASE_PASS=${DBPASS}
+      - SCAN_INTERVAL=10m
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    restart: unless-stopped
+    volumes:
+      - phpipam-ca:/usr/local/share/ca-certificates:ro
+    env_file:
+      - .env
+    depends_on:
+      - phpipam-mariadb
+  phpipam-mariadb:
+    container_name: phpipam-mariadb
+    image: mariadb:latest
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DBPASS}
+    restart: unless-stopped
+    volumes:
+      - phpipam-db-data:/var/lib/mysql
+    env_file:
+      - .env
+volumes:
+  phpipam-db-data: null
+  phpipam-logo: null
+  phpipam-ca: null
+networks: {}
